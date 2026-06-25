@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Matrix Ledger</title>
+    <style>
+        :root {
+            --bg-canvas: #f9fafc;
+            --surface: #ffffff;
+            --txt-primary: #1e293b;
+            --txt-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-canvas);
+            color: var(--txt-primary);
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .dashboard-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header-block {
+            margin-bottom: 32px;
+        }
+
+        .header-block h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin: 0 0 6px 0;
+            color: #0f172a;
+        }
+
+        .header-block p {
+            color: var(--txt-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        /* Analytics Ticker Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .stat-card small {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--txt-muted);
+            font-weight: 600;
+        }
+
+        .stat-card div {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Table Architecture */
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--txt-muted);
+            padding: 16px 24px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.15s ease;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .student-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar-stub {
+            width: 32px;
+            height: 32px;
+            background: #e0e7ff;
+            color: #4f46e5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-pass {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-fail {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-wrapper">
+        <div class="header-block">
+            <h1>Departmental Ledger</h1>
+            <p>Automated computing analytics compilation & score index profiles.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <small>Total Processed</small>
+                <div id="stat-total-students">0</div>
+            </div>
+            <div class="stat-card">
+                <small>Departmental Mean</small>
+                <div id="stat-class-avg">0.0%</div>
+            </div>
+            <div class="stat-card">
+                <small>Clearance Ratio</small>
+                <div id="stat-pass-rate">0%</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="ledger-table">
+                <thead>
+                    <tr>
+                        <th>Student Profile</th>
+                        <th>Computed Average</th>
+                        <th>Status Clearance</th>
+                    </tr>
+                </thead>
+                <tbody id="ledger-rows-target">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Source multi-class raw object payload text
+        const schoolData = '{"classA":[' +
+            '{"name":"Amara", "CSC101":72, "CSC102":55, "CSC103":68},' +
+            '{"name":"Chidi", "CSC101":40, "CSC102":48, "CSC103":35},' +
+            '{"name":"Ngozi", "CSC101":85, "CSC102":90, "CSC103":78},' +
+            '{"name":"Emeka", "CSC101":60, "CSC102":52, "CSC103":44}],' +
+            '"classB":[' +
+            '{"name":"Fatima", "CSC101":91, "CSC102":88, "CSC103":95},' +
+            '{"name":"Tunde", "CSC101":30, "CSC102":45, "CSC103":50},' +
+            '{"name":"Blessing","CSC101":77, "CSC102":63, "CSC103":70},' +
+            '{"name":"Seun", "CSC101":55, "CSC102":49, "CSC103":58}]}';
+
+        const parsedPayload = JSON.parse(schoolData);
+        const rowsTarget = document.getElementById('ledger-rows-target');
+
+        let totalStudents = 0;
+        let cumulativeScoresAggregate = 0;
+        let totalPasses = 0;
+        let rowsHtmlMarkup = "";
+
+        // Unpack properties natively via structural keys
+        Object.keys(parsedPayload).forEach(classKey => {
+            parsedPayload[classKey].forEach(student => {
+                const totalCoursePoints = student.CSC101 + student.CSC102 + student.CSC103;
+                const computedAverage = parseFloat((totalCoursePoints / 3).toFixed(2));
+                
+                totalStudents++;
+                cumulativeScoresAggregate += computedAverage;
+                
+                const isCleared = computedAverage >= 50;
+                if (isCleared) totalPasses++;
+
+                const statusText = isCleared ? "Passed" : "Failed";
+                const badgeClass = isCleared ? "badge-pass" : "badge-fail";
+                const initials = student.name.substring(0, 2).toUpperCase();
+
+                rowsHtmlMarkup += `
+                    <tr>
+                        <td>
+                            <div class="student-meta">
+                                <div class="avatar-stub">${initials}</div>
+                                <div>
+                                    <strong style="color: #0f172a; font-weight: 600;">${student.name}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--txt-muted); margin-top:2px;">Registry Reference: ${classKey.toUpperCase()}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="font-weight: 600; font-variant-numeric: tabular-nums;">${computedAverage}%</span>
+                        </td>
+                        <td>
+                            <span class="badge ${badgeClass}">${statusText}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+
+        // Push dynamic calculations directly into the layout widgets
+        document.getElementById('stat-total-students').textContent = totalStudents;
+        document.getElementById('stat-class-avg').textContent = `${(cumulativeScoresAggregate / totalStudents).toFixed(1)}%`;
+        document.getElementById('stat-pass-rate').textContent = `${Math.round((totalPasses / totalStudents) * 100)}%`;
+
+        rowsTarget.innerHTML = rowsHtmlMarkup;
+    </script>
+</body>
+</html>

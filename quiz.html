@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Architecture Diagnostic</title>
+    <style>
+        :root {
+            --canvas: #0b0f19;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: #384ddb22;
+            --txt-main: #f8fafc;
+            --txt-muted: #94a3b8;
+            --accent-glow: #6366f1;
+            
+            /* Contextual State Overlays */
+            --match-state: #10b981;
+            --clash-state: #f43f5e;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--canvas);
+            color: var(--txt-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 85vh;
+            transition: background-color 0.4s ease;
+        }
+
+        .quiz-wrapper {
+            background: var(--surface);
+            width: 100%;
+            max-width: 520px;
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Top Progress Metrics */
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .progress-header span {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--txt-muted);
+            font-weight: 700;
+        }
+
+        .progress-track {
+            height: 4px;
+            width: 100%;
+            background-color: #0f172a;
+            border-radius: 2px;
+            margin-bottom: 32px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-glow);
+            box-shadow: 0 0 12px var(--accent-glow);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        h3 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            line-height: 1.4;
+            margin: 0 0 28px 0;
+            color: var(--txt-main);
+            letter-spacing: -0.01em;
+        }
+
+        /* Choice Nodes Stack Layout */
+        .stack-box {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 32px;
+        }
+
+        .node-btn {
+            background-color: #151f32;
+            color: var(--txt-main);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 16px 20px;
+            font-size: 0.98rem;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .node-btn:hover:not(:disabled) {
+            background-color: var(--surface-hover);
+            transform: translateX(4px);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Dynamic Feedback Evaluation Rule Hooks */
+        .node-btn.pass-eval {
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            border-color: var(--match-state) !important;
+            color: #34d399 !important;
+            font-weight: 600;
+        }
+
+        .node-btn.fail-eval {
+            background-color: rgba(244, 63, 94, 0.15) !important;
+            border-color: var(--clash-state) !important;
+            color: #f87171 !important;
+        }
+
+        /* Nav Deck Row */
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-step {
+            background-color: var(--accent-glow);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-step.visible-active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .btn-step:hover {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            background-color: #4f46e5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-wrapper" id="dynamic-shell">
+        <div class="progress-header">
+            <span id="step-indicator">Step -- / --</span>
+            <span id="running-score">Points: --</span>
+        </div>
+        <div class="progress-track">
+            <div id="progress-fill-bar" class="progress-fill"></div>
+        </div>
+
+        <h3 id="prompt-display">Loading core logic matrix...</h3>
+        
+        <div id="choices-stack" class="stack-box"></div>
+
+        <div class="action-row">
+            <button id="next-step-btn" class="btn-step" onclick="advanceSequence()">Next Sequence</button>
+        </div>
+    </div>
+
+    <script>
+        const platformRepository = [
+            { question: "Which core HTML structural asset tag directly links executable client script runtimes?", answers: ["&lt;scripting&gt;", "&lt;js&gt;", "&lt;script&gt;", "&lt;link&gt;"], correctIdx: 2 },
+            { question: "What represents the accurate syntax notation layout for literal array definitions in JS?", answers: ["let structure = (1, 2)", "let structure = [1, 2]", "let structure = {1, 2}", "let structure = '1,2'"], correctIdx: 1 },
+            { question: "Which keyword halts execution metrics directly out of an operational iteration loop frame?", answers: ["break", "terminate", "exit", "return"], correctIdx: 0 },
+            { question: "What is the proper structural format convention to execute a custom routine named callProcess?", answers: ["invoke callProcess()", "callProcess.execute()", "callProcess()", "run callProcess"], correctIdx: 2 }
+        ];
+
+        let executionIndex = 0;
+        let runningScoreTotal = 0;
+
+        function renderActiveMatrix() {
+            clearInteractiveContext();
+            
+            const currentItem = platformRepository[executionIndex];
+            const progressPercent = ((executionIndex) / platformRepository.length) * 100;
+            
+            // Render text trackers
+            document.getElementById('step-indicator').textContent = `Sequence ${executionIndex + 1} of ${platformRepository.length}`;
+            document.getElementById('running-score').textContent = `Score: ${runningScoreTotal}`;
+            document.getElementById('progress-fill-bar').style.width = `${progressPercent}%`;
+            document.getElementById('prompt-display').innerHTML = currentItem.question;
+
+            const stack = document.getElementById('choices-stack');
+            
+            currentItem.answers.forEach((strText, loopIdx) => {
+                const node = document.createElement('button');
+                node.className = 'node-btn';
+                node.innerHTML = strText;
+                node.onclick = () => parseSelectionImpact(node, loopIdx);
+                stack.appendChild(node);
+            });
+        }
+
+        function clearInteractiveContext() {
+            // FIXED: Wrapped the CSS variable reference in proper string syntax
+            document.body.style.backgroundColor = "var(--canvas)";
+            document.getElementById('choices-stack').innerHTML = '';
+            document.getElementById('next-step-btn').classList.remove('visible-active');
+        }
+
+        function parseSelectionImpact(clickedNode, userSelectionIdx) {
+            const indexTarget = platformRepository[executionIndex].correctIdx;
+            const absoluteCollection = document.querySelectorAll('.node-btn');
+
+            // Lock input mechanics immediately
+            absoluteCollection.forEach(btn => btn.disabled = true);
+
+            if (userSelectionIdx === indexTarget) {
+                clickedNode.classList.add('pass-eval');
+                document.body.style.backgroundColor = "#041e17"; // Fluid Dark Green background state shift
+                runningScoreTotal++;
+                document.getElementById('running-score').textContent = `Score: ${runningScoreTotal}`;
+            } else {
+                clickedNode.classList.add('fail-eval');
+                absoluteCollection[indexTarget].classList.add('pass-eval');
+                document.body.style.backgroundColor = "#1b0a11"; // Fluid Dark Red background state shift
+            }
+
+            document.getElementById('next-step-btn').classList.add('visible-active');
+        }
+
+        function advanceSequence() {
+            executionIndex++;
+            if (executionIndex < platformRepository.length) {
+                renderActiveMatrix();
+            } else {
+                renderFinalDiagnostics();
+            }
+        }
+
+        function renderFinalDiagnostics() {
+            document.getElementById('progress-fill-bar').style.width = '100%';
+            // FIXED: Wrapped the CSS variable reference in proper string syntax
+            document.body.style.backgroundColor = "var(--canvas)";
+            
+            const calculationRatio = (runningScoreTotal / platformRepository.length) * 100;
+            let dynamicRemarkStr = "";
+
+            if (calculationRatio === 100) dynamicRemarkStr = "Absolute system validation profile clearance. Exceptional.";
+            else if (calculationRatio >= 75) dynamicRemarkStr = "Operational parameter variance nominal. Strong layout understanding.";
+            else if (calculationRatio >= 50) dynamicRemarkStr = "Baseline thresholds cleared. Syntactical anomalies detected.";
+            else dynamicRemarkStr = "Critical threshold metrics failure. Review resource lines.";
+
+            document.getElementById('dynamic-shell').innerHTML = `
+                <div style="text-align: center; padding: 12px 0;">
+                    <h2 style="color: var(--txt-main); font-size: 1.5rem; font-weight: 800; margin: 0 0 10px 0;">Diagnostic Complete</h2>
+                    <p style="color: var(--txt-muted); font-size: 0.95rem; margin: 0 0 30px 0;">System run parameters evaluated comprehensively.</p>
+                    
+                    <div style="font-size: 3rem; font-weight: 800; color: var(--accent-glow); margin-bottom: 8px; font-variant-numeric: tabular-nums;">
+                        ${runningScoreTotal} / ${platformRepository.length}
+                    </div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #34d399; margin-bottom: 35px;">
+                        Clearance Metric Rate: ${calculationRatio}%
+                    </div>
+
+                    <div style="background: #151f32; padding: 18px; border-radius: 12px; font-size: 0.88rem; color: var(--txt-muted); border: 1px solid rgba(255,255,255,0.02); line-height: 1.5; font-style: italic; margin-bottom: 35px;">
+                        "${dynamicRemarkStr}"
+                    </div>
+
+                    <button onclick="window.location.reload()" style="width:100%; padding: 14px; background: #22c55e; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: background 0.2s;">
+                        Re-run Engine Cycle
+                    </button>
+                </div>
+            `;
+        }
+
+        // Engage operational cycle
+        renderActiveMatrix();
+    </script>
+</body>
+</html>

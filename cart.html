@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Tech Outpost — Premium Storefront</title>
+    <style>
+        :root {
+            --bg-base: #f6f8fa;
+            --surface: #ffffff;
+            --text-main: #111827;
+            --text-alt: #6b7280;
+            --indigo-prime: #4f46e5;
+            --danger-prime: #f43f5e;
+            --border-line: #e5e7eb;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .store-wrapper {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 868px) {
+            .store-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin: 0 0 20px 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Inventory Catalog Layout */
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: var(--surface);
+            border: 1px solid var(--border-line);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.05);
+            border-color: #d1d5db;
+        }
+
+        .product-card h4 {
+            margin: 0 0 6px 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .product-card p {
+            margin: 0 0 20px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--indigo-prime);
+        }
+
+        /* Action Controls */
+        button {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-add {
+            background-color: #f3f4f6;
+            color: var(--text-main);
+        }
+
+        .btn-add:hover {
+            background-color: var(--indigo-prime);
+            color: white;
+        }
+
+        /* Dynamic Cart Sidebar Panel */
+        .cart-panel {
+            background: var(--surface);
+            border: 1px solid var(--border-line);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            align-self: start;
+        }
+
+        .cart-stack {
+            margin-bottom: 24px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-line);
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info strong {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .item-info span {
+            font-size: 0.85rem;
+            color: var(--text-alt);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn-remove {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            background-color: transparent;
+            color: var(--text-alt);
+            border: 1px solid var(--border-line);
+        }
+
+        .btn-remove:hover {
+            background-color: #fff1f2;
+            color: var(--danger-prime);
+            border-color: #fecdd3;
+        }
+
+        .summary-block {
+            border-top: 2px dashed var(--border-line);
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .empty-notice {
+            color: var(--text-alt);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 40px 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="store-wrapper">
+        
+        <div>
+            <h2>Available Hardware</h2>
+            <div id="products-target" class="catalog-grid"></div>
+        </div>
+
+        <div class="cart-panel">
+            <h2>
+                <span>Current Order</span>
+                <span id="cart-counter" style="font-size: 0.85rem; background: #e0e7ff; color: var(--indigo-prime); padding: 4px 10px; border-radius: 99px;">0 items</span>
+            </h2>
+            
+            <div id="cart-target" class="cart-stack"></div>
+
+            <div class="summary-block">
+                <div class="total-row">
+                    <span>Estimated Total:</span>
+                    <span>₦<span id="total-target">0</span></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const products = [
+            { id: 1, name: "Flagship Laptop", price: 300000 },
+            { id: 2, name: "Next-Gen Smartphone", price: 150000 },
+            { id: 3, name: "Precision Wireless Mouse", price: 5000 },
+            { id: 4, name: "Mechanical Deck Keyboard", price: 10000 },
+            { id: 5, name: "Studio Reference Headset", price: 15000 }
+        ];
+
+        const cart = [];
+
+        function displayProducts() {
+            const container = document.getElementById("products-target");
+            container.innerHTML = "";
+
+            products.forEach(product => {
+                const card = document.createElement("div");
+                card.className = "product-card";
+
+                card.innerHTML = `
+                    <div>
+                        <h4>${product.name}</h4>
+                        <p>₦${product.price.toLocaleString('en-NG')}</p>
+                    </div>
+                    <button class="btn-add" onclick="addToCart(${product.id})">
+                        Add To Bag
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function addToCart(id) {
+            const item = products.find(p => p.id === id);
+            if (item) {
+                cart.push(item);
+                renderCart();
+            }
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCart() {
+            const cartContainer = document.getElementById("cart-target");
+            const counterElement = document.getElementById("cart-counter");
+            cartContainer.innerHTML = "";
+
+            counterElement.textContent = `${cart.length} ${cart.length === 1 ? 'item' : 'items'}`;
+
+            if (cart.length === 0) {
+                cartContainer.innerHTML = `<p class="empty-notice">Your shopping bag is empty.</p>`;
+                document.getElementById("total-target").textContent = "0";
+                return;
+            }
+
+            let computedRunningTotal = 0;
+
+            cart.forEach((item, index) => {
+                computedRunningTotal += item.price;
+
+                const row = document.createElement("div");
+                row.className = "cart-item";
+                row.innerHTML = `
+                    <div class="item-info">
+                        <strong>${item.name}</strong>
+                        <span>₦${item.price.toLocaleString('en-NG')}</span>
+                    </div>
+                    <button class="btn-remove" onclick="removeFromCart(${index})">
+                        Drop
+                    </button>
+                `;
+                cartContainer.appendChild(row);
+            });
+
+            document.getElementById("total-target").textContent = computedRunningTotal.toLocaleString('en-NG');
+        }
+
+        // Initialize execution stack layout
+        displayProducts();
+        renderCart();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 40px;
+        }
+        .container {
+            max-width: 650px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin: 0 auto;
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 18px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Library Transaction & Inventory Log</h2>
+        <pre id="output">Processing transactions...</pre>
+    </div>
+
+    <script>
+        class Book {
+            constructor(title, author, year) {
+                this.title = title;
+                this.author = author;
+                this.year = year;
+                this.available = true;
+            }
+        }
+
+        class Library {
+            constructor() {
+                this.books = [];
+                this.log = ""; // Store dynamic transaction messages for the UI screen
+            }
+
+            // Append transaction notes to our running display string
+            writeLog(message) {
+                this.log += message + "\n";
+            }
+
+            addBook(book) {
+                this.books.push(book);
+                this.writeLog(`[ADDED] "${book.title}" by ${book.author} has been cataloged.`);
+            }
+
+            borrowBook(title) {
+                // Find target using case-insensitive match filtering
+                const book = this.books.find(b => b.title.toLowerCase() === title.toLowerCase());
+                
+                if (!book) {
+                    this.writeLog(`[ERROR] Unable to borrow: "${title}" was not found in the system registry.`);
+                    return;
+                }
+                
+                if (book.available) {
+                    book.available = false;
+                    this.writeLog(`[BORROWED] Success! You checked out "${book.title}".`);
+                } else {
+                    this.writeLog(`[UNAVAILABLE] Sorry, "${book.title}" is already checked out by someone else.`);
+                }
+            }
+
+            returnBook(title) {
+                const book = this.books.find(b => b.title.toLowerCase() === title.toLowerCase());
+                
+                if (!book) {
+                    this.writeLog(`[ERROR] Unable to return: "${title}" doesn't belong to this database.`);
+                    return;
+                }
+
+                if (!book.available) {
+                    book.available = true;
+                    this.writeLog(`[RETURNED] "${book.title}" processed back into active inventory.`);
+                } else {
+                    this.writeLog(`[NOTICE] "${book.title}" was already present on library shelves.`);
+                }
+            }
+
+            getAvailableBooks() {
+                return this.books.filter(book => book.available);
+            }
+        }
+
+        // --- Execute Actions and Simulation System ---
+        const library = new Library();
+
+        // Populate baseline records
+        library.addBook(new Book("Things Fall Apart", "Chinua Achebe", 1958));
+        library.addBook(new Book("Half of a Yellow Sun", "Chimamanda Ngozi Adichie", 2006));
+        library.addBook(new Book("Purple Hibiscus", "Chimamanda Ngozi Adichie", 2003));
+        library.writeLog(""); // Spacer line
+
+        // Perform standard state-changing actions
+        library.borrowBook("Things Fall Apart");
+        library.borrowBook("Non-Existent Novel Test"); // Verifies missing asset handler
+        library.borrowBook("Things Fall Apart");      // Verifies already-borrowed asset handler
+        library.writeLog(""); // Spacer line
+
+        // Generate final inventory list layout output block
+        let finalOutput = library.log;
+        finalOutput += "======================================\n";
+        finalOutput += "CURRENT AVAILABLE INVENTORY LIST:\n";
+        finalOutput += "======================================\n";
+        
+        const currentShelvedBooks = library.getAvailableBooks();
+        
+        if (currentShelvedBooks.length === 0) {
+            finalOutput += "No books are currently available on shelves.\n";
+        } else {
+            currentShelvedBooks.forEach((book, index) => {
+                finalOutput += `${index + 1}. "${book.title}" — ${book.author} (${book.year})\n`;
+            });
+        }
+
+        // Push unified output into DOM node display frame
+        document.getElementById("output").textContent = finalOutput;
+    </script>
+</body>
+</html>
